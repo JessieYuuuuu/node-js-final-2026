@@ -11,9 +11,10 @@ const dataSource = new DataSource({
   ssl: config.get("db.ssl"),
   entities: [
     // TODO: 資料表未建立完整，共8張
-    require("../entities/User"),
-    require("../entities/Skill"),
-    require("../entities/Coach"),
+    require("../entities/User"), // 使用者
+    require("../entities/Skill"), // 技能
+    require("../entities/CreditPackage"), // 方案
+    require("../entities/Coach"), // 教練
   ],
 });
 module.exports = { dataSource };

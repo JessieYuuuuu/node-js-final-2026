@@ -2,7 +2,7 @@ const config = require("./config/index");
 const express = require("express");
 const cors = require("cors");
 const { dataSource } = require("./db/data-source");
-
+const appError = require("./utils/appError");
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -18,13 +18,13 @@ app.get("/healthcheck", async (req, res) => {
 });
 
 // 路由掛載（後續步驟逐一加入）
+app.use("/api/coaches/skill", require("./routes/skill"));
+app.use("/api/users", require("./routes/users"));
+app.use("/api/credit-package", require("./routes/creditPackage"));
 
 // 404 錯誤
 app.use((req, res, next) => {
-  res.status(404).json({
-    status: "failed",
-    message: "Not Found!!",
-  });
+  next(appError(404, "Not Found!!"));
   return;
 });
 
