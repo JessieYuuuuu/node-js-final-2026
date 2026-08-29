@@ -2,7 +2,7 @@
 const { EntitySchema } = require("typeorm");
 module.exports = new EntitySchema({
   name: "User",
-  tableName: "users",
+  tableName: "user",
   columns: {
     id: { type: "uuid", primary: true, generated: "uuid" },
     name: { type: "varchar", length: 50, nullable: false },

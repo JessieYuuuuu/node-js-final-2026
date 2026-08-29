@@ -1,8 +1,8 @@
 // 教練技能關係表
 const { EntitySchema } = require("typeorm");
 module.exports = new EntitySchema({
-  name: "CoachSkills",
-  tableName: "coach_skills",
+  name: "CoachSkill",
+  tableName: "coach_skill",
   columns: {
     coach_id: { type: "uuid", primary: true },
     skill_id: { type: "uuid", primary: true },
