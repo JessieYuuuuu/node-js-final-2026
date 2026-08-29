@@ -1,4 +1,3 @@
-// entities/Coach.js
 const { EntitySchema } = require("typeorm");
 module.exports = new EntitySchema({
   name: "Coach",
@@ -17,6 +16,11 @@ module.exports = new EntitySchema({
       type: "one-to-one",
       target: "User", // ← 對應 Entity 的 name，不是 tableName
       joinColumn: { name: "user_id" }, // ← 對應本表的欄位名
+    },
+    coachSkills: {
+      type: "one-to-many",
+      target: "CoachSkills", // ← 對應 Entity 的 name，不是 tableName
+      inverseSide: "coach", // ← 對應 CoachSkills Entity 的 relations 屬性名
     },
   },
 });

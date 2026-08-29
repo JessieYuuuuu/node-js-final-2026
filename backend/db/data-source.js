@@ -15,6 +15,7 @@ const dataSource = new DataSource({
     require("../entities/Skill"), // 技能
     require("../entities/CreditPackage"), // 方案
     require("../entities/Coach"), // 教練
+    require("../entities/CoachSkills"), // 教練技能關聯表
   ],
 });
 module.exports = { dataSource };
