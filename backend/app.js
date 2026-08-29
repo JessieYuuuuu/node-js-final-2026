@@ -7,7 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// M0 healthcheck（下一步實作）
+// 路由掛載
+// M0 healthcheck
 app.get("/healthcheck", async (req, res) => {
   try {
     await dataSource.query("SELECT 1"); // 確認資料庫活著
@@ -16,13 +17,15 @@ app.get("/healthcheck", async (req, res) => {
     res.status(503).send("Service Unavailable");
   }
 });
-
-// 路由掛載（後續步驟逐一加入）
+// M1
 app.use("/api/coaches/skill", require("./routes/skill"));
-app.use("/api/users", require("./routes/users"));
-app.use("/api/credit-package", require("./routes/creditPackage"));
+// M2
+app.use("/api/users", require("./routes/user"));
+// M3
+app.use("/api/admin/coaches/courses", require("./routes/course"));
 app.use("/api/admin/coaches", require("./routes/coach"));
 
+app.use("/api/credit-package", require("./routes/creditPackage"));
 // 404 錯誤
 app.use((req, res, next) => {
   next(appError(404, "Not Found!!"));

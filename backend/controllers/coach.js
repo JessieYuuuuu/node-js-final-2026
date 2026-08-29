@@ -4,13 +4,8 @@ const { isValidString } = require("../utils/validUtils");
 // 規定提示文字
 const INPUT_ERR = "欄位未填寫正確";
 
-const usersController = {
+const coachController = {
   async upgradeToCoach(req, res, next) {
-    /* 
-  欄位缺漏或格式不對（experience_years 不是 0 以上的整數、description 是空字串、profile_image_url 有值但不是 https 開頭）→「欄位未填寫正確」
-userId 查不到對應的使用者 →「使用者不存在」
-使用者已經是教練
-    */
     const { userId } = req.params;
     const { experience_years, description, profile_image_url } = req.body;
     if (
@@ -85,7 +80,7 @@ userId 查不到對應的使用者 →「使用者不存在」
     const coach = await coachRepo.findOneBy({
       user_id: req.user.id,
     });
-    const coachSkillsRepo = dataSource.getRepository("CoachSkills");
+    const coachSkillsRepo = dataSource.getRepository("CoachSkill");
     await coachRepo.update(
       { user_id: req.user.id },
       {
@@ -119,4 +114,4 @@ userId 查不到對應的使用者 →「使用者不存在」
   }, // 更新教練資料(含整批更換技能)
 };
 
-module.exports = usersController;
+module.exports = coachController;

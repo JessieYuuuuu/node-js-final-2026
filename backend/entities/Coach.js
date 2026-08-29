@@ -7,7 +7,7 @@ module.exports = new EntitySchema({
     user_id: { type: "uuid", nullable: false, unique: true },
     experience_years: { type: "integer", nullable: false, default: 0 },
     description: { type: "text", nullable: false },
-    profile_image_url: { type: "varchar", length: 2048, nullable: false },
+    profile_image_url: { type: "varchar", length: 2048, nullable: true },
     created_at: { type: "timestamp", createDate: true },
     updated_at: { type: "timestamp", updateDate: true },
   },
