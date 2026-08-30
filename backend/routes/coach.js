@@ -1,10 +1,11 @@
 const router = require("express").Router();
-const coachController = require("../controllers/coach.js");
-const isAuth = require("../middlewares/isAuth"); // token驗證
-const isCoach = require("../middlewares/isCoach"); // 教練驗證
+const publicCoachController = require("../controllers/publicCoach.js");
 
-router.post("/:userId", coachController.upgradeToCoach);
-router.get("/", isAuth, isCoach, coachController.getCoachInfo);
-router.put("/", isAuth, isCoach, coachController.putCoachInfo);
+// 取得公開教練列表
+router.get("/", publicCoachController.getCoachs);
+// 取得單一教練詳細資料
+router.get("/:coachId", publicCoachController.getCoach);
+// 取得單一教練的課程列表
+router.get("/:coachId/courses", publicCoachController.getCoachsCourses);
 
 module.exports = router;

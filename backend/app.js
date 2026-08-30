@@ -19,13 +19,15 @@ app.get("/healthcheck", async (req, res) => {
 });
 // M1
 app.use("/api/coaches/skill", require("./routes/skill"));
+app.use("/api/credit-package", require("./routes/creditPackage"));
 // M2
 app.use("/api/users", require("./routes/user"));
 // M3
-app.use("/api/admin/coaches/courses", require("./routes/course"));
-app.use("/api/admin/coaches", require("./routes/coach"));
+app.use("/api/admin/coaches", require("./routes/admin"));
+// M4
+app.use("/api/courses", require("./routes/courses.js"));
+app.use("/api/coaches", require("./routes/coach.js"));
 
-app.use("/api/credit-package", require("./routes/creditPackage"));
 // 404 錯誤
 app.use((req, res, next) => {
   next(appError(404, "Not Found!!"));
