@@ -14,5 +14,5 @@ router.put("/", isAuth, isCoach, coachController.putCoachInfo);
 router.post("/:userId", coachController.upgradeToCoach);
 
 // // TODO M6 教練本人指定月分營收統計
-// router.get("/revenue", isAuth, isCoach, coachController.getRevenue);
+router.get("/revenue", isAuth, isCoach, coachController.getRevenue);
 module.exports = router;

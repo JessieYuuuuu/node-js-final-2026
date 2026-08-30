@@ -4,6 +4,7 @@ const { dataSource } = require("../db/data-source");
 const config = require("../config/index");
 const appError = require("../utils/appError");
 const { isValidString, isValidPassword } = require("../utils/validUtils");
+const { getUserCredit, getUserBooking } = require("../server/user");
 
 // 規定提示文字
 const PW_ERR = "密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字";
@@ -58,9 +59,9 @@ const usersController = {
     const user = await userRepo.findOneBy({
       email: inputEmail,
     });
-    if (!user) return next(appError(404, NOT_FOUND_USER_ERR));
+    if (!user) return next(appError(400, NOT_FOUND_USER_ERR));
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return next(appError(401, NOT_FOUND_USER_ERR));
+    if (!isMatch) return next(appError(400, NOT_FOUND_USER_ERR));
     // JWT payload 格式：解開 token 後必須包含 { id, role, exp } 三個欄位
     const token = jwt.sign(
       { id: user.id, role: user.role },
@@ -144,6 +145,53 @@ const usersController = {
       data: null,
     });
   }, // 更新密碼
+  async getUserBuy(req, res, next) {
+    const cPurchaseRepo = dataSource.getRepository("CreditPurchase");
+    const userBuy = await cPurchaseRepo.find({
+      where: { user_id: req.user.id },
+      order: { purchase_at: "DESC" },
+      relations: {
+        creditPackage: true,
+      },
+    });
+    const data = userBuy.map((p) => {
+      return {
+        name: p.creditPackage.name,
+        purchased_credits: p.purchase_credit,
+        price_paid: p.purchase_price,
+        purchase_at: p.purchase_at,
+      };
+    });
+    res.status(200).json({
+      status: "success",
+      data,
+    });
+  }, // 取得登入者的方案購買紀錄
+  async getUserCredit(req, res, next) {
+    const uid = req.user.id;
+    const userHas = await getUserCredit(uid);
+    const userBooking = await getUserBooking(uid, true);
+    const userUsage = userBooking.filter((b) => !b.cancelled_at);
+    const course_booking = userBooking.map((b) => {
+      return {
+        course_id: b.course_id,
+        name: b.course.name,
+        start_at: b.course.start_at,
+        end_at: b.course.end_at,
+        meeting_url: b.course.meeting_url,
+        coach_name: b.course.user.name,
+        cancelled_at: b.cancelled_at,
+      };
+    });
+    res.status(200).json({
+      status: "success",
+      data: {
+        credit_remain: userHas.userPoint - userUsage.length,
+        credit_usage: userUsage.length,
+        course_booking,
+      },
+    });
+  }, //取得登入者的課表與剩餘堂數
 };
 
 module.exports = usersController;

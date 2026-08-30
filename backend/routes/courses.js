@@ -1,12 +1,13 @@
 const router = require("express").Router();
-const publicCourseController = require("../controllers/publicCourse.js");
+const courseController = require("../controllers/course.js");
+const isAuth = require("../middlewares/isAuth");
 
 // 取得公開課程列表
-router.get("/", publicCourseController.getCourses);
+router.get("/", courseController.getAllCourses);
 
-// // TODO M5 報名課程
-// router.post("/:courseId", publicCourseController.postCourses);
-// // TODO M5 取消課程報名
-// router.delete("/:courseId", publicCourseController.deleteCourses);
+// M5 報名課程
+router.post("/:courseId", isAuth, courseController.postCourses);
+// M5 取消課程報名
+router.delete("/:courseId", isAuth, courseController.deleteCourses);
 
 module.exports = router;

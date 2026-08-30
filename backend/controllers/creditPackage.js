@@ -1,7 +1,9 @@
 const { dataSource } = require("../db/data-source");
 const appError = require("../utils/appError");
-const { isValidString } = require("../utils/validUtils");
+const { isValidString, isValidUUID } = require("../utils/validUtils");
 
+const INPUT_ERR = "欄位未填寫正確";
+const NOT_FOUND_PACKAGE = "ID錯誤";
 const CreditPackageController = {
   async getCreditPackage(req, res, next) {
     const CreditPackage = await dataSource.getRepository("CreditPackage").find({
@@ -17,9 +19,9 @@ const CreditPackageController = {
     const errorMessages = [];
     if (!isValidString(name)) {
       errorMessages.push("名稱");
-    } else if (typeof credit_amount !== "number" || credit_amount <= 0) {
+    } else if (!Number.isInteger(credit_amount) || credit_amount < 0) {
       errorMessages.push("點數數量");
-    } else if (typeof price !== "number" || price <= 0) {
+    } else if (!Number.isInteger(price) || price < 0) {
       errorMessages.push("價格");
     }
     if (errorMessages.length > 0) {
@@ -62,5 +64,25 @@ const CreditPackageController = {
       next(error);
     }
   },
+
+  async buyCreditPackage(req, res, next) {
+    const { creditPackageId } = req.params;
+    if (!isValidString(creditPackageId) || !isValidUUID(creditPackageId))
+      return next(appError(400, INPUT_ERR));
+    const cPackageRepo = dataSource.getRepository("CreditPackage");
+    const findPackage = await cPackageRepo.findOneBy({ id: creditPackageId });
+    if (!findPackage) return next(appError(400, NOT_FOUND_PACKAGE));
+    const cPurchaseRepo = dataSource.getRepository("CreditPurchase");
+    await cPurchaseRepo.save({
+      user_id: req.user.id,
+      credit_package_id: findPackage.id,
+      purchase_credit: findPackage.credit_amount,
+      purchase_price: findPackage.price,
+    });
+    res.json({
+      status: "success",
+      data: null,
+    });
+  }, // 使用者購買方案
 };
 module.exports = CreditPackageController;

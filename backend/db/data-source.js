@@ -10,13 +10,14 @@ const dataSource = new DataSource({
   synchronize: config.get("db.synchronize"),
   ssl: config.get("db.ssl"),
   entities: [
-    // TODO: 資料表未建立完整，共8張
+    require("../entities/CreditPackage"), // 方案
     require("../entities/User"), // 使用者
     require("../entities/Skill"), // 技能
     require("../entities/Coach"), // 教練
     require("../entities/CoachSkill"), // 教練技能關聯表
     require("../entities/Course"), // 課程
-    require("../entities/CreditPackage"), // 方案
+    require("../entities/CreditPurchase"), //會員購買方案紀錄
+    require("../entities/CourseBooking"),
   ],
 });
 module.exports = { dataSource };

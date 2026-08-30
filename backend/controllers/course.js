@@ -1,9 +1,11 @@
 const { dataSource } = require("../db/data-source");
+const { MoreThan, LessThanOrEqual, IsNull } = require("typeorm");
 const appError = require("../utils/appError");
-const { isValidString } = require("../utils/validUtils");
+const { isValidString, isValidUUID } = require("../utils/validUtils");
 // 規定提示文字
 const INPUT_ERR = "欄位未填寫正確";
 const NOT_FOUND_COURSE_ERR = "課程不存在";
+const ID_ERR = "ID錯誤";
 
 const courseController = {
   async getCourses(req, res, next) {
@@ -180,6 +182,97 @@ const courseController = {
       },
     });
   }, // 更新課程資訊
+  async getAllCourses(req, res, next) {
+    const now = new Date().toISOString();
+    const courseRepo = dataSource.getRepository("Course");
+    const courses = await courseRepo.find({
+      where: {
+        start_at: LessThanOrEqual(now),
+        end_at: MoreThan(now),
+      },
+      order: {
+        start_at: "ASC",
+      },
+      relations: {
+        skill: true,
+        user: true,
+      },
+    });
+    const data = courses.map((c) => {
+      return {
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        start_at: c.start_at,
+        end_at: c.end_at,
+        max_participants: c.max_participants,
+        coach_name: c.user.name,
+        skill_name: c.skill.name,
+      };
+    });
+    res.status(200).json({
+      status: "success",
+      data,
+    });
+  },
+  async postCourses(req, res, next) {
+    const { courseId } = req.params;
+    if (!isValidString(courseId) || !isValidUUID(courseId))
+      return next(appError(400, INPUT_ERR));
+    const courseRepo = dataSource.getRepository("Course");
+    const course = await courseRepo.findOneBy({ id: courseId });
+    if (!course) return next(appError(400, NOT_FOUND_COURSE_ERR));
+
+    const bookingRepo = dataSource.getRepository("CourseBooking");
+    const courseBooking = await bookingRepo.findBy({ course_id: courseId });
+    const hasBooking = courseBooking.find((b) => b.user_id === req.user.id);
+    if (hasBooking) return next(appError(400, "已經報名過此課程"));
+    const userBooking = await bookingRepo.find({
+      where: { user_id: req.user.id, cancelled_at: IsNull() },
+    });
+    const creditPurchaseRepo = dataSource.getRepository("CreditPurchase");
+    const userBuy = await creditPurchaseRepo.findBy({
+      user_id: req.user.id,
+    });
+    const userPoint = userBuy.reduce((acc, p) => (acc += p.purchase_credit), 0);
+    if (userPoint - userBooking.length <= 0)
+      return next(appError(400, "已無可使用堂數"));
+    const booking = courseBooking.filter((b) => !b.cancelled_at);
+    if (booking.length >= course.max_participants)
+      return next(appError(400, "已達最大參加人數，無法參加"));
+    await bookingRepo.save({
+      user_id: req.user.id,
+      course_id: courseId,
+    });
+    res.status(201).json({
+      status: "success",
+      data: null,
+    });
+  }, //user報名課程
+  async deleteCourses(req, res, next) {
+    const { courseId } = req.params;
+    if (!isValidString(courseId) || !isValidUUID(courseId))
+      return next(appError(400, ID_ERR));
+    const courseRepo = dataSource.getRepository("Course");
+    const course = await courseRepo.findOneBy({ id: courseId });
+    if (!course) return next(appError(400, ID_ERR));
+
+    const bookingRepo = dataSource.getRepository("CourseBooking");
+    const courseBooking = await bookingRepo.findBy({ course_id: courseId });
+    const hasBooking = courseBooking.find((b) => b.user_id === req.user.id);
+    if (!hasBooking || hasBooking.cancelled_at)
+      return next(appError(400, ID_ERR));
+    await bookingRepo.update(
+      { id: hasBooking.id },
+      {
+        cancelled_at: new Date(),
+      },
+    );
+    res.status(200).json({
+      status: "success",
+      data: null,
+    });
+  }, // 使用者取消預約
 };
 
 module.exports = courseController;
