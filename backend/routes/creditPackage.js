@@ -3,7 +3,7 @@ const creditPackageController = require("../controllers/creditPackage");
 const isAuth = require("../middlewares/isAuth");
 router.get("/", creditPackageController.getCreditPackage);
 router.post("/", creditPackageController.postCreditPackage);
-router.delete("/:CreditPackageId", creditPackageController.deleteCreditPackage);
+router.delete("/:creditPackageId", creditPackageController.deleteCreditPackage);
 
 // M5 購買堂數(需登入)
 router.post(

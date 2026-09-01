@@ -67,7 +67,7 @@ services:
       DB_USERNAME: student
       DB_PASSWORD: student666
       DB_DATABASE: fitness
-      JWT_SECRET: change-this-secret
+      JWT_SECRET: hexschool-nodejs-final-jessieyu
       JWT_EXPIRES_DAY: 30d
       DB_SYNCHRONIZE: "true"
       DB_ENABLE_SSL: "false"

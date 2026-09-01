@@ -2,7 +2,7 @@ const config = require("./config/index");
 const express = require("express");
 const cors = require("cors");
 const { dataSource } = require("./db/data-source");
-const appError = require("./utils/appError");
+const { appError } = require("./utils/responseUtils");
 const app = express();
 app.use(cors());
 app.use(express.json());

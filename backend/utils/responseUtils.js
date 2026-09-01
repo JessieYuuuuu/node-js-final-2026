@@ -4,4 +4,12 @@ const appError = (status, message) => {
   error.status = status;
   return error;
 };
-module.exports = appError;
+const appSuccess = (data) => ({
+  status: "success",
+  data,
+});
+
+module.exports = {
+  appError,
+  appSuccess,
+};

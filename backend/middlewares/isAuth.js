@@ -2,7 +2,7 @@
 const jwt = require("jsonwebtoken");
 const { dataSource } = require("../db/data-source");
 const config = require("../config/index");
-const appError = require("../utils/appError");
+const { appError } = require("../utils/responseUtils");
 
 const TOKEN_ERR = "無效的 token";
 const TOKEN_EXPIRED_ERR = "Token 已過期";

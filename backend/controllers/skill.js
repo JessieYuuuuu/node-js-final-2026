@@ -1,42 +1,36 @@
-const { dataSource } = require("../db/data-source");
-const appError = require("../utils/appError");
-const { isValidString } = require("../utils/validUtils");
-
+const { appError, appSuccess } = require("../utils/responseUtils");
+const { isValidString, isValidUUID } = require("../utils/validUtils");
+const { skillRepo } = require("../db/repositories");
+const {
+  INPUT_ERR,
+  ID_ERR,
+  DATA_DUPLICATE_ERR,
+} = require("../constants/errorMessages");
 const skillController = {
   async getSkills(req, res, next) {
-    const skills = await dataSource.getRepository("Skill").find({
+    const skills = await skillRepo.find({
       select: { id: true, name: true },
       order: { created_at: "ASC" },
     });
-    res.json({ status: "success", data: skills });
-    return;
+    return res.json(appSuccess(skills));
   },
 
   async postSkill(req, res, next) {
     const { name } = req.body;
-    if (!isValidString(name)) {
-      next(appError(400, "欄位未填寫正確"));
-      return;
-    }
-    const skillRepo = dataSource.getRepository("Skill");
+    if (!isValidString(name)) return next(appError(400, INPUT_ERR));
     const existing = await skillRepo.findOneBy({ name: name.trim() });
-    if (existing) {
-      next(appError(409, "資料重複"));
-      return;
-    }
+    if (existing) return next(appError(409, DATA_DUPLICATE_ERR));
     const skill = await skillRepo.save({ name: name.trim() });
-    res.json({ status: "success", data: skill });
+    res.json(appSuccess({ ...skill, createdAt: skill.created_at }));
   },
 
   async deleteSkill(req, res, next) {
     try {
       const { skillId } = req.params;
-      const result = await dataSource.getRepository("Skill").delete(skillId);
-      if (result.affected === 0) {
-        next(appError(400, "ID錯誤"));
-        return;
-      }
-      res.json({ status: "success" });
+      if (!isValidUUID(skillId)) return next(appError(400, ID_ERR));
+      const result = await skillRepo.delete(skillId);
+      if (result.affected === 0) return next(appError(400, ID_ERR));
+      res.json(appSuccess(null));
     } catch (error) {
       console.error(error);
       next(error);

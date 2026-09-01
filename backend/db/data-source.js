@@ -16,8 +16,8 @@ const dataSource = new DataSource({
     require("../entities/Coach"), // 教練
     require("../entities/CoachSkill"), // 教練技能關聯表
     require("../entities/Course"), // 課程
-    require("../entities/CreditPurchase"), //會員購買方案紀錄
-    require("../entities/CourseBooking"),
+    require("../entities/CreditPurchase"), // 會員購買方案紀錄
+    require("../entities/CourseBooking"), // 會員預約課程紀錄
   ],
 });
 module.exports = { dataSource };

@@ -11,6 +11,7 @@ module.exports = new EntitySchema({
     end_at: { type: "text", nullable: false },
     meeting_url: { type: "varchar", length: 2048, nullable: false },
     created_at: { type: "timestamp", createDate: true },
+    updated_at: { type: "timestamp", updateDate: true },
     user_id: { type: "uuid", nullable: false },
     skill_id: { type: "uuid", nullable: false },
   },

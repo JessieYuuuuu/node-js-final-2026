@@ -1,31 +1,45 @@
-const { dataSource } = require("../db/data-source");
 const { MoreThan, Between, IsNull } = require("typeorm");
-const appError = require("../utils/appError");
+const { appError, appSuccess } = require("../utils/responseUtils");
 const {
   isInteger,
   isValidString,
+  isValidStringArr,
   isValidUUID,
+  isValidUrl,
+  isValidCoach,
 } = require("../utils/validUtils");
-// 規定提示文字
-const INPUT_ERR = "欄位未填寫正確";
+
+const {
+  userRepo,
+  coachRepo,
+  coachSkillRepo,
+  courseRepo,
+  creditPackageRepo,
+  courseBookingRepo,
+} = require("../db/repositories");
+const {
+  INPUT_ERR,
+  COACH_NOT_FOUND_ERR,
+  USER_IS_COACH_ERR,
+  USER_NOT_FOUND_ERR,
+} = require("../constants/errorMessages");
 
 const coachController = {
   async upgradeToCoach(req, res, next) {
     const { userId } = req.params;
     const { experience_years, description, profile_image_url } = req.body;
     if (
+      !isValidUUID(userId) ||
       !isValidString(description) ||
       !Number.isInteger(experience_years) ||
       experience_years < 0 ||
-      (profile_image_url && !profile_image_url.startsWith("https://"))
+      (profile_image_url && !isValidUrl(profile_image_url))
     )
       return next(appError(400, INPUT_ERR));
-    const userRepo = dataSource.getRepository("User");
-    const coachRepo = dataSource.getRepository("Coach");
     const matchUser = await userRepo.findOneBy({ id: userId });
-    if (!matchUser) return next(appError(404, "使用者不存在"));
-    if (matchUser.role === "COACH")
-      return next(appError(409, "使用者已經是教練"));
+    if (!matchUser) return next(appError(404, USER_NOT_FOUND_ERR));
+    if (isValidCoach(matchUser.role))
+      return next(appError(409, USER_IS_COACH_ERR));
     const updatedUser = await userRepo.save({
       ...matchUser,
       role: "COACH",
@@ -37,55 +51,48 @@ const coachController = {
       profile_image_url: profile_image_url ? profile_image_url.trim() : null,
     });
     // 成功回201，資料只回 user 的 id（uuid 字串）與 name
-    res.status(201).json({
-      status: "success",
-      data: {
+    res.status(201).json(
+      appSuccess({
         user: { name: updatedUser.name, role: "COACH" },
-        coach: {
-          coach_id: coach.id,
-          experience_years: coach.experience_years,
-          description: coach.description,
-          profile_image_url: coach.profile_image_url,
-        },
-      },
-    });
+        coach,
+      }),
+    );
   }, // 升級成教練
   async getCoachInfo(req, res, next) {
-    const coachRepo = dataSource.getRepository("Coach");
     const coach = await coachRepo.findOne({
       where: { user_id: req.user.id },
       relations: {
         coachSkills: true,
       },
     });
-    // 登入成功要201，並回token
-    res.status(200).json({
-      status: "success",
-      data: {
+    res.status(200).json(
+      appSuccess({
         id: coach.id,
         experience_years: coach.experience_years,
         description: coach.description,
         profile_image_url: coach.profile_image_url,
-        skill_ids: coach.coachSkills.map((skill) => skill.id),
-      },
-    });
+        skill_ids: coach.coachSkills.map((skill) => skill.skill_id),
+      }),
+    );
   }, // 取得教練資訊
   async putCoachInfo(req, res, next) {
     const { experience_years, description, profile_image_url, skill_ids } =
       req.body;
+    const skillUUID =
+      Array.isArray(skill_ids) &&
+      skill_ids.length > 0 &&
+      skill_ids.every(isValidUUID);
     if (
+      !skillUUID ||
       !Number.isInteger(experience_years) ||
       experience_years < 0 ||
-      !isValidString(description) ||
-      !isValidString(profile_image_url) ||
-      (profile_image_url && !profile_image_url.startsWith("https://"))
+      !isValidStringArr([description, profile_image_url]) ||
+      (profile_image_url && !isValidUrl(profile_image_url))
     )
       return next(appError(400, INPUT_ERR));
-    const coachRepo = dataSource.getRepository("Coach");
     const coach = await coachRepo.findOneBy({
       user_id: req.user.id,
     });
-    const coachSkillsRepo = dataSource.getRepository("CoachSkill");
     await coachRepo.update(
       { user_id: req.user.id },
       {
@@ -97,25 +104,24 @@ const coachController = {
     // 更新技能關聯
     if (skill_ids) {
       // 先刪除現有關聯
-      await coachSkillsRepo.delete({ coach_id: coach.id });
+      await coachSkillRepo.delete({ coach_id: coach.id });
       // 新增新的關聯
       const newCoachSkills = skill_ids.map((skill_id) => ({
         coach_id: coach.id,
         skill_id,
       }));
-      await coachSkillsRepo.save(newCoachSkills);
+      await coachSkillRepo.save(newCoachSkills);
     }
 
-    res.status(200).json({
-      status: "success",
-      data: {
+    res.status(200).json(
+      appSuccess({
         id: coach.id,
         experience_years,
         description: description.trim(),
         profile_image_url,
         skill_ids: skill_ids || [],
-      },
-    });
+      }),
+    );
   }, // 更新教練資料(含整批更換技能)
   async getCoachs(req, res, next) {
     const { per, page } = req.query;
@@ -127,10 +133,9 @@ const coachController = {
       !isInteger(pageNumber) ||
       perNumber <= 0 ||
       pageNumber <= 0
-    ) {
+    )
       return next(appError(400, INPUT_ERR));
-    }
-    const coachRepo = dataSource.getRepository("Coach");
+
     const coachs = await coachRepo.find({
       take: perNumber,
       skip: (pageNumber - 1) * perNumber,
@@ -145,26 +150,23 @@ const coachController = {
         name: c.user.name,
       };
     });
-    res.status(200).json({
-      status: "success",
-      data,
-    });
-  },
+    res.status(200).json(appSuccess(data));
+  }, // 抓取所有教練列表
   async getCoach(req, res, next) {
     const { coachId } = req.params;
-    if (!isValidString(coachId) || !isValidUUID(coachId))
-      return next(appError(400, INPUT_ERR));
-    const coachRepo = dataSource.getRepository("Coach");
+    if (!isValidUUID(coachId)) return next(appError(400, INPUT_ERR));
     const matchCoach = await coachRepo.findOne({
       where: {
         id: coachId,
       },
       relations: {
         user: true,
-        coachSkills: true,
+        coachSkills: {
+          skill: true,
+        },
       },
     });
-    if (!matchCoach) return next(appError(400, "找不到該教練"));
+    if (!matchCoach) return next(appError(400, COACH_NOT_FOUND_ERR));
     const data = {
       user: {
         name: matchCoach.user.name,
@@ -178,23 +180,17 @@ const coachController = {
         profile_image_url: matchCoach.profile_image_url,
         created_at: matchCoach.created_at,
         updated_at: matchCoach.updated_at,
-        skills: matchCoach.coachSkills.map((s) => s.name),
+        skills: matchCoach.coachSkills.map((c) => c.skill.name),
       },
     };
-    res.status(200).json({
-      status: "success",
-      data,
-    });
-  },
+    res.status(200).json(appSuccess(data));
+  }, // 教練詳細資料
   async getCoachsCourses(req, res, next) {
     const { coachId } = req.params;
-    if (!isValidString(coachId) || !isValidUUID(coachId))
-      return next(appError(400, INPUT_ERR));
-    const coachRepo = dataSource.getRepository("Coach");
+    if (!isValidUUID(coachId)) return next(appError(400, INPUT_ERR));
     const matchCoach = await coachRepo.findOneBy({ id: coachId });
-    if (!matchCoach) return next(appError(400, "找不到該教練"));
+    if (!matchCoach) return next(appError(400, COACH_NOT_FOUND_ERR));
     const now = new Date().toISOString();
-    const courseRepo = dataSource.getRepository("Course");
     const courses = await courseRepo.find({
       where: {
         user_id: matchCoach.user_id,
@@ -220,11 +216,8 @@ const coachController = {
         skill_name: c.skill.name,
       };
     });
-    res.status(200).json({
-      status: "success",
-      data,
-    });
-  },
+    res.status(200).json(appSuccess(data));
+  }, // 教練課表
   async getRevenue(req, res, next) {
     // Available values : january, february, march, april, may, june, july, august, september, october, november, december
     const { month } = req.query;
@@ -249,8 +242,7 @@ const coachController = {
     const startOfMonth = new Date(currentYear, monthIndex, 1);
     const startOfNextMonth = new Date(currentYear, monthIndex + 1, 1);
     const endOfMonth = new Date(startOfNextMonth.getTime() - 1);
-    const bookingRepo = dataSource.getRepository("CourseBooking");
-    const courseBookings = await bookingRepo.find({
+    const courseBookings = await courseBookingRepo.find({
       where: {
         cancelled_at: IsNull(),
         created_at: Between(startOfMonth, endOfMonth),
@@ -269,8 +261,7 @@ const coachController = {
     const notReUser = new Set(courseBookings.map((b) => b.user_id));
 
     // 計算一堂課的單價:方案售價總和/方案堂數總和
-    const cPackageRepo = dataSource.getRepository("CreditPackage");
-    const findPackage = await cPackageRepo.find();
+    const findPackage = await creditPackageRepo.find();
     const allCredit = findPackage.reduce(
       (acc, p) => (acc += p.credit_amount),
       0,
@@ -278,16 +269,15 @@ const coachController = {
     const allPrice = findPackage.reduce((acc, p) => (acc += p.price), 0);
     const averagePrice = allCredit > 0 ? allPrice / allCredit : 0;
     const revenue = Math.floor(courseBookings.length * averagePrice);
-    res.status(200).json({
-      status: "success",
-      data: {
+    res.status(200).json(
+      appSuccess({
         total: {
           revenue, // 營收
           participants: notReUser.size, // 該月不重複報名的學員
           course_count: courseBookings.length, // 該月未取消的報名數
         },
-      },
-    });
+      }),
+    );
   }, // 教練報表
 };
 
