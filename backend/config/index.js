@@ -2,8 +2,9 @@ require("dotenv").config();
 const db = require("./db");
 const web = require("./web");
 const secret = require("./secret");
+const r2 = require("./r2");
 
-const config = { db, web, secret };
+const config = { db, web, secret, r2 };
 // config.get("db.host") => config.db.host
 const get = (path) => {
   const keys = path.split("."); //根據.分割path

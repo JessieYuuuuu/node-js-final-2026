@@ -38,7 +38,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-  
+
   # ============================================================
   # W10 容器化挑戰：將專案內既有的 backend 加入 Docker Compose
   # 規則（GitHub Actions 的壓軸驗收按這個來）：
@@ -56,6 +56,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+
+    env_file:
+      - ./backend/.env
 
     ports:
       - "8080:8080"
@@ -80,7 +83,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://localhost:8080/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""
+          'node -e "fetch(''http://localhost:8080/healthcheck'').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
         ]
       interval: 10s
       timeout: 3s

@@ -27,6 +27,8 @@ app.use("/api/admin/coaches", require("./routes/admin"));
 // M4
 app.use("/api/courses", require("./routes/courses.js"));
 app.use("/api/coaches", require("./routes/coach.js"));
+// 加分題
+app.use("/api/upload", require("./routes/upload"));
 
 // 404 錯誤
 app.use((req, res, next) => {

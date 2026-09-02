@@ -17,6 +17,14 @@ const DATA_DUPLICATE_ERR = "資料重複";
 const USER_NAME_UNCHANGED_ERR = "使用者名稱未變更";
 const UPDATE_USER_FAILED_ERR = "更新使用者資料失敗";
 const PASSWORD_INCORRECT_ERR = "密碼輸入錯誤";
+const UPLOAD_FILE_REQUIRED_ERR = "請上傳圖片";
+const UPLOAD_FILE_TYPE_ERR = "只允許上傳 jpg 或 png 圖片";
+const UPLOAD_ERR = "上傳檔案格式錯誤";
+const UPLOAD_ERROR_MESSAGES = Object.freeze({
+  LIMIT_FILE_SIZE: "圖片大小不能超過 2MB",
+  LIMIT_FILE_COUNT: "一次只能上傳一張圖片",
+  LIMIT_UNEXPECTED_FILE: "上傳欄位名稱必須是 file",
+});
 const CREDIT_PACKAGE_FIELD_LABELS = Object.freeze({
   NAME: "名稱",
   CREDIT_AMOUNT: "點數數量",
@@ -44,6 +52,10 @@ module.exports = {
   USER_NAME_UNCHANGED_ERR,
   UPDATE_USER_FAILED_ERR,
   PASSWORD_INCORRECT_ERR,
+  UPLOAD_FILE_REQUIRED_ERR,
+  UPLOAD_FILE_TYPE_ERR,
+  UPLOAD_ERR,
+  UPLOAD_ERROR_MESSAGES,
   CREDIT_PACKAGE_FIELD_LABELS,
   getInputFieldsErr,
 };
