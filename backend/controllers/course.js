@@ -1,4 +1,4 @@
-const { MoreThan, LessThanOrEqual, IsNull } = require("typeorm");
+const { MoreThan, LessThanOrEqual, IsNull, In } = require("typeorm");
 const { appError, appSuccess } = require("../utils/responseUtils");
 const {
   isValidStringArr,
@@ -28,30 +28,45 @@ const courseController = {
       },
     });
 
+    const participantCounts = new Map();
+    if (courses.length > 0) {
+      const activeBookings = await courseBookingRepo.find({
+        where: {
+          course_id: In(courses.map((course) => course.id)),
+          cancelled_at: IsNull(),
+        },
+        select: {
+          course_id: true,
+        },
+      });
+
+      activeBookings.forEach(({ course_id }) => {
+        participantCounts.set(
+          course_id,
+          (participantCounts.get(course_id) || 0) + 1,
+        );
+      });
+    }
+
     const now = new Date();
-    const data = await Promise.all(
-      courses.map(async (c) => {
-        const sAt = new Date(c.start_at);
-        const eAt = new Date(c.end_at);
-        let status;
-        if (now < sAt) status = "尚未開始";
-        else if (now <= eAt) status = "進行中";
-        else status = "已結束";
-        const participants = (await getCourseBooking(c.id)).filter(
-          (b) => !b.cancelled_at,
-        ).length;
-        return {
-          id: c.id,
-          name: c.name,
-          status,
-          start_at: c.start_at,
-          end_at: c.end_at,
-          max_participants: c.max_participants,
-          meeting_url: c.meeting_url,
-          participants, //報名人數
-        };
-      }),
-    ); // 處理status
+    const data = courses.map((c) => {
+      const sAt = new Date(c.start_at);
+      const eAt = new Date(c.end_at);
+      let status;
+      if (now < sAt) status = "尚未開始";
+      else if (now <= eAt) status = "進行中";
+      else status = "已結束";
+      return {
+        id: c.id,
+        name: c.name,
+        status,
+        start_at: c.start_at,
+        end_at: c.end_at,
+        max_participants: c.max_participants,
+        meeting_url: c.meeting_url,
+        participants: participantCounts.get(c.id) || 0, //報名人數
+      };
+    }); // 處理status
 
     res.status(200).json(appSuccess(data));
   }, // 取得特定教練的全部課程
